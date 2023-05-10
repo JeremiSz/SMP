@@ -1,3 +1,4 @@
+mod application;
 pub fn run(){
-    println!("Running server");
+    application::run();
 }
