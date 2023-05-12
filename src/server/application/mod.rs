@@ -1,9 +1,12 @@
 mod presentation;
 mod message_store;
 mod connection;
+mod smt_helper;
+
 use std::net::{TcpListener,TcpStream};
 use std::io;
 use std::sync::{Mutex,Arc};
+use std::collections::HashMap;
 
 use self::message_store::MessageStore;
 
@@ -53,12 +56,73 @@ fn socket_thread(connection:TcpStream,message_store:Arc<Mutex<MessageStore>>){
     }
 
     let mut connection = connection.unwrap();
+    let request = connection.recieve_message();
+    if request.is_err(){
+        presentation::error(format!("Failed to recieve message: {:?}",request.err().unwrap()));
+        return;
+    }
+    let request = smt_helper::parse(request.unwrap());
+    let username = is_valid_login(&mut connection, request);
+    if username.is_err(){
+        presentation::error(format!("Failed to validate login: {:?}",username.err().unwrap()));
+        return;
+    }
+    let username = username.unwrap();
+    done = username.is_none();
+    
+
     while !done{
         let request = connection.recieve_message();
         if request.is_err(){
             presentation::error(format!("Failed to recieve message: {:?}",request.err().unwrap()));
             continue;
         }
-
+        let request = smt_helper::parse(request.unwrap());
+        match request.get(smt_helper::COMMAND).unwrap() as &str {
+            smt_helper::COMMAND_READ => { read(request,&mut connection,&message_store)},
+            smt_helper::COMMAND_WRITE => {write(request,&mut connection,&message_store)},
+            smt_helper::COMMAND_LOGOUT => {done = logout(request,&mut connection)},
+            _ => {connection.send_message(smt_helper::get_error(1002));}
+        }
     }
+}
+fn is_valid_login(socket:&mut connection::Connection,request:HashMap<String,String>)->io::Result<Option<String>>{
+    if !request.contains_key(smt_helper::COMMAND) || request.get(smt_helper::COMMAND).unwrap() != smt_helper::COMMAND_LOGIN{
+        socket.send_message(smt_helper::get_error(1003))?;
+        Ok(None)
+    } 
+    else if !request.contains_key(smt_helper::LOGIN_USERNAME) || request.get(smt_helper::LOGIN_USERNAME).unwrap().is_empty(){
+        socket.send_message(smt_helper::get_error(1004))?;
+        Ok(None)
+    }
+    else{
+        Ok(Some(request.get(smt_helper::LOGIN_USERNAME).unwrap().to_string()))
+    }
+}
+fn read(request:HashMap<String,String>,connection:&mut connection::Connection,message_store:&Arc<Mutex<MessageStore>>){
+    if request.len() > 1{
+        connection.send_message(smt_helper::get_error(3003));
+        return;
+    }
+    let store = message_store.lock().unwrap();
+    let authors = store.get_authors();
+    let texts = store.get_texts();
+    connection.send_message(smt_helper::successful_read(authors,texts));
+}
+fn write(request:HashMap<String,String>,connection:&mut connection::Connection,message_store:&Arc<Mutex<MessageStore>>){
+    if !request.contains_key(smt_helper::WRITE_TEXT) || request.get(smt_helper::WRITE_TEXT).unwrap().is_empty(){
+        connection.send_message(smt_helper::get_error(2003));
+        return;
+    }
+    let text = request.get(smt_helper::WRITE_TEXT).unwrap().to_string();
+    let username = request.get(smt_helper::LOGIN_USERNAME).unwrap().to_string();
+    message_store.lock().unwrap().add_message(username,text);
+    connection.send_message(smt_helper::successful_write());
+}
+fn logout(request:HashMap<String,String>,connection:&mut connection::Connection)->bool{
+    if request.len() > 1{
+        connection.send_message(smt_helper::get_error(4003));
+        return false;
+    }
+    true
 }
