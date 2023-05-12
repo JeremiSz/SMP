@@ -7,6 +7,9 @@ use std::net::{TcpListener,TcpStream};
 use std::io;
 use std::sync::{Mutex,Arc};
 use std::collections::HashMap;
+use std::thread;
+
+use connection::Connection;
 
 use self::message_store::MessageStore;
 
@@ -26,6 +29,11 @@ pub fn run(){
             continue;
         }
         let connection = connection.unwrap();
+        let new_message_store = message_store.clone();
+
+        thread::spawn(move ||{
+            socket_thread(connection.0,new_message_store);
+        });
 
     }
 }
@@ -49,7 +57,7 @@ fn get_input(question:String,default:String)->String{
 
 fn socket_thread(connection:TcpStream,message_store:Arc<Mutex<MessageStore>>){
     let mut done :bool= false;
-    let connection = connection::Connection::connect(connection);
+    let connection = Connection::connect(connection);
     if connection.is_err(){
         presentation::error(format!("Failed to connect to client: {:?}",connection.err().unwrap()));
         return;
@@ -86,7 +94,7 @@ fn socket_thread(connection:TcpStream,message_store:Arc<Mutex<MessageStore>>){
         }
     }
 }
-fn is_valid_login(socket:&mut connection::Connection,request:HashMap<String,String>)->io::Result<Option<String>>{
+fn is_valid_login(socket:&mut Connection,request:HashMap<String,String>)->io::Result<Option<String>>{
     if !request.contains_key(smt_helper::COMMAND) || request.get(smt_helper::COMMAND).unwrap() != smt_helper::COMMAND_LOGIN{
         socket.send_message(smt_helper::get_error(1003))?;
         Ok(None)
@@ -99,7 +107,7 @@ fn is_valid_login(socket:&mut connection::Connection,request:HashMap<String,Stri
         Ok(Some(request.get(smt_helper::LOGIN_USERNAME).unwrap().to_string()))
     }
 }
-fn read(request:HashMap<String,String>,connection:&mut connection::Connection,message_store:&Arc<Mutex<MessageStore>>){
+fn read(request:HashMap<String,String>,connection:&mut Connection,message_store:&Arc<Mutex<MessageStore>>){
     if request.len() > 1{
         connection.send_message(smt_helper::get_error(3003));
         return;
@@ -109,7 +117,7 @@ fn read(request:HashMap<String,String>,connection:&mut connection::Connection,me
     let texts = store.get_texts();
     connection.send_message(smt_helper::successful_read(authors,texts));
 }
-fn write(request:HashMap<String,String>,connection:&mut connection::Connection,message_store:&Arc<Mutex<MessageStore>>){
+fn write(request:HashMap<String,String>,connection:&mut Connection,message_store:&Arc<Mutex<MessageStore>>){
     if !request.contains_key(smt_helper::WRITE_TEXT) || request.get(smt_helper::WRITE_TEXT).unwrap().is_empty(){
         connection.send_message(smt_helper::get_error(2003));
         return;
@@ -119,7 +127,7 @@ fn write(request:HashMap<String,String>,connection:&mut connection::Connection,m
     message_store.lock().unwrap().add_message(username,text);
     connection.send_message(smt_helper::successful_write());
 }
-fn logout(request:HashMap<String,String>,connection:&mut connection::Connection)->bool{
+fn logout(request:HashMap<String,String>,connection:&mut Connection)->bool{
     if request.len() > 1{
         connection.send_message(smt_helper::get_error(4003));
         return false;
