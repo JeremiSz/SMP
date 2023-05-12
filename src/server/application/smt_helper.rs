@@ -36,12 +36,6 @@ pub fn get_error(code:u16)->String{
     }
 }
 
-pub fn successful_login()->String{
-    format!("command:{},code:{},meaning:{}",COMMAND_LOGIN,1001,"Successful login")
-}
-pub fn successful_logout()->String{
-    format!("command:{},code:{},meaning:{}",COMMAND_LOGOUT,4001,"Successful logout")
-}
 pub fn successful_write()->String{
     format!("command:{},code:{},meaning:{}",COMMAND_WRITE,2001,"Message recieved successfully")
 }

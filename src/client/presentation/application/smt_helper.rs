@@ -1,32 +1,9 @@
 use std::collections::HashMap;
 
-type ErrorResponce<'a> = ((&'a str,&'a str),(&'a str,&'a str),(&'a str,&'a str));
-
 pub const ATTR_CODE :&str = "code";
 pub const ATTR_MEANING :&str = "meaning";
 pub const ATTR_AUTHORS :&str = "authors";
 pub const ATTR_TEXT :&str = "text";
-const COMMAND :&str = "command";
-pub const GENERIC_LOGIN_ERROR : ErrorResponce= (
-    (ATTR_CODE,"1002"),
-    (ATTR_MEANING,"Other login error"),
-    (COMMAND,"login")
-    );
-pub const GENERIC_WRITE_ERROR : ErrorResponce = (
-    (ATTR_CODE,"2002"),
-    (ATTR_MEANING,"Other write error"),
-    (COMMAND,"write")
-    );
-pub const GENERIC_READ_ERROR : ErrorResponce= (
-    (ATTR_CODE,"3002"),
-    (ATTR_MEANING,"Other read error"),
-    (COMMAND,"read")
-);
-pub const GENERIC_LOGOUT_ERROR : ErrorResponce = (
-    (ATTR_CODE,"4002"),
-    (ATTR_MEANING,"Other logout error"),
-    (COMMAND,"logout")
-    );
 const ENTRY_DELIMITER :&str = ",";
 const VALUE_DELIMITER :&str = ":";
 

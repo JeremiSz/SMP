@@ -56,7 +56,6 @@ fn get_input(question:String,default:String)->String{
 }
 
 fn socket_thread(connection:TcpStream,message_store:Arc<Mutex<MessageStore>>){
-    let mut done :bool= false;
     let connection = Connection::connect(connection);
     if connection.is_err(){
         presentation::error(format!("Failed to connect to client: {:?}",connection.err().unwrap()));
@@ -76,7 +75,7 @@ fn socket_thread(connection:TcpStream,message_store:Arc<Mutex<MessageStore>>){
         return;
     }
     let username = username.unwrap();
-    done = username.is_none();
+    let mut done = username.is_none();
     
 
     while !done{
@@ -89,9 +88,28 @@ fn socket_thread(connection:TcpStream,message_store:Arc<Mutex<MessageStore>>){
         match request.get(smt_helper::COMMAND).unwrap() as &str {
             smt_helper::COMMAND_READ => { read(request,&mut connection,&message_store)},
             smt_helper::COMMAND_WRITE => {write(request,&mut connection,&message_store)},
-            smt_helper::COMMAND_LOGOUT => {done = logout(request,&mut connection)},
-            _ => {connection.send_message(smt_helper::get_error(1002));}
-        }
+            smt_helper::COMMAND_LOGOUT => {
+                let result = logout(request,&mut connection);
+                if result.is_err(){
+                    done = false;
+                    io::Result::Err(result.err().unwrap())
+                }
+                else{
+                    done = result.is_err();
+                    io::Result::Ok(())
+                }
+
+            },
+            _ => {
+                let message = connection.send_message(smt_helper::get_error(1002));
+                if message.is_err(){
+                    io::Result::Err(message.err().unwrap())
+                }
+                else{
+                    io::Result::Ok(())
+                }
+            }
+        }.expect("Failed to process request");
     }
 }
 fn is_valid_login(socket:&mut Connection,request:HashMap<String,String>)->io::Result<Option<String>>{
@@ -107,30 +125,29 @@ fn is_valid_login(socket:&mut Connection,request:HashMap<String,String>)->io::Re
         Ok(Some(request.get(smt_helper::LOGIN_USERNAME).unwrap().to_string()))
     }
 }
-fn read(request:HashMap<String,String>,connection:&mut Connection,message_store:&Arc<Mutex<MessageStore>>){
+fn read(request:HashMap<String,String>,connection:&mut Connection,message_store:&Arc<Mutex<MessageStore>>)->io::Result<()>{
     if request.len() > 1{
-        connection.send_message(smt_helper::get_error(3003));
-        return;
+        connection.send_message(smt_helper::get_error(3003))?;
     }
     let store = message_store.lock().unwrap();
     let authors = store.get_authors();
     let texts = store.get_texts();
-    connection.send_message(smt_helper::successful_read(authors,texts));
+    connection.send_message(smt_helper::successful_read(authors,texts))?;
+    Ok(())
 }
-fn write(request:HashMap<String,String>,connection:&mut Connection,message_store:&Arc<Mutex<MessageStore>>){
+fn write(request:HashMap<String,String>,connection:&mut Connection,message_store:&Arc<Mutex<MessageStore>>)->io::Result<()>{
     if !request.contains_key(smt_helper::WRITE_TEXT) || request.get(smt_helper::WRITE_TEXT).unwrap().is_empty(){
-        connection.send_message(smt_helper::get_error(2003));
-        return;
+        connection.send_message(smt_helper::get_error(2003))?;
     }
     let text = request.get(smt_helper::WRITE_TEXT).unwrap().to_string();
     let username = request.get(smt_helper::LOGIN_USERNAME).unwrap().to_string();
     message_store.lock().unwrap().add_message(username,text);
-    connection.send_message(smt_helper::successful_write());
+    connection.send_message(smt_helper::successful_write())?;
+    Ok(())
 }
-fn logout(request:HashMap<String,String>,connection:&mut Connection)->bool{
+fn logout(request:HashMap<String,String>,connection:&mut Connection)->io::Result<bool>{
     if request.len() > 1{
-        connection.send_message(smt_helper::get_error(4003));
-        return false;
+        connection.send_message(smt_helper::get_error(4003))?;
     }
-    true
+    Ok(true)
 }
