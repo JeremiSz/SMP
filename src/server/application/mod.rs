@@ -91,6 +91,7 @@ fn socket_thread(connection: TcpStream, message_store: Arc<Mutex<MessageStore>>)
     }
     let username = username.unwrap();
     let mut done = username.is_none();
+    let username = username.unwrap_or("".to_string());
     let result = connection.send_message(smt_helper::successful_login());
     if result.is_err() {
         presentation::error(format!(
@@ -112,7 +113,7 @@ fn socket_thread(connection: TcpStream, message_store: Arc<Mutex<MessageStore>>)
         let request = smt_helper::parse(request.unwrap());
         match request.get(smt_helper::COMMAND).unwrap() as &str {
             smt_helper::COMMAND_READ => read(request, &mut connection, &message_store),
-            smt_helper::COMMAND_WRITE => write(request, &mut connection, &message_store),
+            smt_helper::COMMAND_WRITE => write(request, username.clone(),&mut connection, &message_store),
             smt_helper::COMMAND_LOGOUT => {
                 let result = logout(request, &mut connection);
                 if result.is_err() {
@@ -170,8 +171,10 @@ fn read(
     connection.send_message(smt_helper::successful_read(authors, texts))?;
     Ok(())
 }
+
 fn write(
     request: HashMap<String, String>,
+    username:String,
     connection: &mut Connection,
     message_store: &Arc<Mutex<MessageStore>>,
 ) -> io::Result<()> {
@@ -181,7 +184,6 @@ fn write(
         connection.send_message(smt_helper::get_error(2003))?;
     }
     let text = request.get(smt_helper::WRITE_TEXT).unwrap().to_string();
-    let username = request.get(smt_helper::LOGIN_USERNAME).unwrap().to_string();
     message_store.lock().unwrap().add_message(username, text);
     connection.send_message(smt_helper::successful_write())?;
     Ok(())

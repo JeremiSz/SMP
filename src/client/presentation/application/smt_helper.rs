@@ -26,8 +26,11 @@ pub fn create_logout() -> String {
 pub fn parse_response(response: String) -> HashMap<String, String> {
     let mut map = HashMap::new();
     let iter = response.split(&ENTRY_DELIMITER);
+    println!("response: {}", response);
     for pair in iter {
+        println!("pair: {}", pair);
         let mut pair_iter = pair.split(&VALUE_DELIMITER);
+        println!("pair_iter: {:?}", pair_iter);
         let key = pair_iter.next().unwrap();
         let value = pair_iter.next().unwrap();
         map.insert(String::from(key), String::from(value));
