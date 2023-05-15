@@ -24,12 +24,14 @@ pub fn run(){
     presentation::log("waiting for connections".to_string());
     loop{
         let connection = socket.accept();
+        println!("got connection");
         if connection.is_err(){
             presentation::error(format!("Failed to accept connection: {:?}",connection.err().unwrap()));
             continue;
         }
         let connection = connection.unwrap();
         let new_message_store = message_store.clone();
+        println!("made requirements");
 
         thread::spawn(move ||{
             socket_thread(connection.0,new_message_store);
@@ -39,8 +41,8 @@ pub fn run(){
 }
 
 fn make_socket()->io::Result<TcpListener>{
-    let port = get_input("Port to listen on".to_string(),"8080".to_string());
-    let hostname = get_input("Hostname to listen (localhost)".to_string(), "localhost".to_string());
+    let port = get_input("Port to listen on".to_string(),"1234".to_string());
+    let hostname = get_input("Hostname to listen".to_string(), "localhost".to_string());
     TcpListener::bind(format!("{}:{}",hostname,port))
 }
 
@@ -56,6 +58,7 @@ fn get_input(question:String,default:String)->String{
 }
 
 fn socket_thread(connection:TcpStream,message_store:Arc<Mutex<MessageStore>>){
+    println!("spawned thread");
     let connection = Connection::connect(connection);
     if connection.is_err(){
         presentation::error(format!("Failed to connect to client: {:?}",connection.err().unwrap()));
@@ -63,12 +66,15 @@ fn socket_thread(connection:TcpStream,message_store:Arc<Mutex<MessageStore>>){
     }
 
     let mut connection = connection.unwrap();
+    println!("about to get message");
     let request = connection.recieve_message();
     if request.is_err(){
         presentation::error(format!("Failed to recieve message: {:?}",request.err().unwrap()));
         return;
     }
-    let request = smt_helper::parse(request.unwrap());
+    let request = request.unwrap();
+    println!("got {}",request);
+    let request = smt_helper::parse(request);
     let username = is_valid_login(&mut connection, request);
     if username.is_err(){
         presentation::error(format!("Failed to validate login: {:?}",username.err().unwrap()));
@@ -76,6 +82,11 @@ fn socket_thread(connection:TcpStream,message_store:Arc<Mutex<MessageStore>>){
     }
     let username = username.unwrap();
     let mut done = username.is_none();
+    let result = connection.send_message(smt_helper::successful_login());
+    if result.is_err(){
+        presentation::error(format!("Failed to send message: {:?}",result.err().unwrap()));
+        return;
+    }
     
 
     while !done{
@@ -111,6 +122,7 @@ fn socket_thread(connection:TcpStream,message_store:Arc<Mutex<MessageStore>>){
             }
         }.expect("Failed to process request");
     }
+    println!("closing connection");
 }
 fn is_valid_login(socket:&mut Connection,request:HashMap<String,String>)->io::Result<Option<String>>{
     if !request.contains_key(smt_helper::COMMAND) || request.get(smt_helper::COMMAND).unwrap() != smt_helper::COMMAND_LOGIN{
@@ -149,5 +161,6 @@ fn logout(request:HashMap<String,String>,connection:&mut Connection)->io::Result
     if request.len() > 1{
         connection.send_message(smt_helper::get_error(4003))?;
     }
+    connection.send_message(smt_helper::successful_logout())?;
     Ok(true)
 }

@@ -16,6 +16,7 @@ impl Connection{
     }
     pub fn send_message(&mut self,message:String)->io::Result<String>{
         self.writer.write(message.as_bytes())?;
+        self.writer.flush()?;
 
         let mut line = String::new();
         self.reader.read_line(&mut line)?;

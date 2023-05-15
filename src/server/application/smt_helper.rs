@@ -37,7 +37,7 @@ pub fn get_error(code:u16)->String{
 }
 
 pub fn successful_write()->String{
-    format!("command:{},code:{},meaning:{}",COMMAND_WRITE,2001,"Message recieved successfully")
+    format!("command:{},code:{},meaning:{}\n",COMMAND_WRITE,2001,"Message recieved successfully")
 }
 pub fn successful_read(authors:&Vec<String>,texts:&Vec<String>)->String{
     let mut authors_string = String::new();
@@ -50,9 +50,16 @@ pub fn successful_read(authors:&Vec<String>,texts:&Vec<String>)->String{
         texts_string.push_str(text);
         texts_string.push_str(":");
     }
-    format!("command:{},code:3001,authors:{},texts:{}",COMMAND_READ,authors_string,texts_string)
+    format!("command:{},code:3001,authors:{},texts:{}\n",COMMAND_READ,authors_string,texts_string)
 }
 
+pub fn successful_login()->String{
+    format!("command:{},code:3001,authors:{},texts:{}\n",COMMAND_LOGIN,1001,"Login successful")
+}
+
+pub fn successful_logout()->String{
+    format!("command:{},code:4001,meaning:{}\n",COMMAND_LOGOUT,"Logout successful")
+}
 fn make_error(command:&str,code:u16,meaning:&str)->String{
-    format!("command:{},code:{},meaning:{}",command,code,meaning)
+    format!("command:{},code:{},meaning:{}\n",command,code,meaning)
 }

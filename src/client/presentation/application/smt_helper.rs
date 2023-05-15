@@ -8,16 +8,16 @@ const ENTRY_DELIMITER :&str = ",";
 const VALUE_DELIMITER :&str = ":";
 
 pub fn create_login(username:String,password:String)->String{
-    format!("command:login,username:{},password:{}",username,password)
+    format!("command:login,username:{},password:{}\n",username,password)
 }
 pub fn create_write(text:String)->String{
-    format!("command:write,text:{}",text)
+    format!("command:write,text:{}\n",text)
 }
 pub fn create_read ()->String{
-    String::from("command:read")
+    String::from("command:read\n")
 }
 pub fn create_logout()->String{
-    String::from("command:logout")
+    String::from("command:logout\n")
 }
 
 pub fn parse_response(response:String)->HashMap<String,String>{

@@ -16,9 +16,13 @@ impl Application{
     }
 
     pub fn login(&mut self,name:String,password:String)->Result<HashMap<String,String>,io::Error>{
+        println!("started login {} {}",name,password);
         let message = smt_helper::create_login(name,password);
+        println!("made {}",message);
         let response = self.connection.send_message(message)?;
+        println!("Got responces");
         let map = smt_helper::parse_response(response);
+        println!("parsed responces");
         Ok(map)
     }
     pub fn close(&mut self)->Result<HashMap<String,String>,io::Error>{

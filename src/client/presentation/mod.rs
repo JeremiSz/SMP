@@ -91,15 +91,15 @@ fn read(app:&mut Application){
 }
 
 fn make_connection()->Result<Application,io::Error>{
-    let hostname = get_input("Please enter the hostname (default: localhost):".to_string(),"localhost".to_string());
-    println!("Please enter the port number (default: 1234):");
-    let portnum_str = get_input("Please enter the port number (default: 1234):".to_string(),"1234".to_string());
+    let hostname = get_input("Please enter the hostname".to_string(),"localhost".to_string());
+    let portnum_str = get_input("Please enter the port number".to_string(),"1234".to_string());
     let portnum = portnum_str.parse::<u16>().unwrap();
     let mut app = Application::new(hostname,portnum);
     
-    let username = get_input("Please enter your username (default: user):".to_string(),"user".to_string());
-    let password = get_input("Please enter your password (default: password):".to_string(),"".to_string());
+    let username = get_input("Please enter your username".to_string(),"user".to_string());
+    let password = get_input("Please enter your password".to_string(),"password".to_string());
     let result = app.login(username,password);
+    println!("Result: {:?}",result);
 
     if result.is_err(){
          Err(result.err().unwrap())
@@ -111,7 +111,7 @@ fn make_connection()->Result<Application,io::Error>{
 
 fn get_input(question:String,defualt:String)->String{
     let mut line = String::new();
-    println!("{}",question);
+    println!("{} (defualt: {}): ",question,defualt);
     std::io::stdin().read_line(&mut line).unwrap();
     let mut input = line.trim().to_string();
     if input.is_empty(){input = defualt;}
