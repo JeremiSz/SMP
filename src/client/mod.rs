@@ -1,5 +1,5 @@
 mod presentation;
 
-pub fn run(){
+pub fn run() {
     presentation::run();
 }
