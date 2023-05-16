@@ -7,13 +7,13 @@ use std::io;
 pub fn run() {
     let app = make_connection();
     if app.is_err() {
-        println!("Error: {}", app.err().unwrap());
+        log_error(app.err().unwrap());
         return;
     }
     let mut app = app.unwrap();
     let mut input = String::new();
     loop {
-        println!("Please enter a command:");
+        log("Please enter a command:");
         std::io::stdin().read_line(&mut input).unwrap();
         let command = input.trim().to_string();
         input.clear();
@@ -31,7 +31,7 @@ pub fn run() {
                 write(&mut app);
             }
             _ => {
-                println!("Invalid command!");
+                log("Invalid command!");
             }
         }
     }
@@ -39,9 +39,8 @@ pub fn run() {
 
 fn logout(app: &mut Application) -> bool {
     let result = app.close();
-    println!("result: {:?}", result);
     if result.is_err() {
-        println!("Error: {}", result.err().unwrap());
+        log_error(result.err().unwrap());
         return false;
     }
     let map = result.unwrap();
@@ -51,7 +50,7 @@ fn logout(app: &mut Application) -> bool {
         .parse::<u16>()
         .unwrap();
     if code != 4001 {
-        println!("Error: {}", map.get(smt_helper::ATTR_MEANING).unwrap());
+        log(map.get(smt_helper::ATTR_MEANING).unwrap());
         return false;
     }
     true
@@ -60,12 +59,12 @@ fn logout(app: &mut Application) -> bool {
 fn write(app: &mut Application) {
     let message = get_input("Please enter your message:".to_string(), "".to_string());
     if message.is_empty() {
-        println!("Message cannot be empty!");
+        log("Message cannot be empty!");
         return;
     }
     let result = app.write(message);
     if result.is_err() {
-        println!("Error: {}", result.err().unwrap());
+        log_error(result.err().unwrap());
         return;
     }
     let map = result.unwrap();
@@ -75,13 +74,13 @@ fn write(app: &mut Application) {
         .parse::<u16>()
         .unwrap();
     if code != 2001 {
-        println!("Error: {}", map.get(smt_helper::ATTR_MEANING).unwrap());
+        log(map.get(smt_helper::ATTR_MEANING).unwrap());
     }
 }
 fn read(app: &mut Application) {
     let result = app.read();
     if result.is_err() {
-        println!("Error: {}", result.err().unwrap());
+        log_error(result.err().unwrap());
         return;
     }
     let map = result.unwrap();
@@ -91,22 +90,20 @@ fn read(app: &mut Application) {
         .parse::<u16>()
         .unwrap();
     if code != 3001 {
-        println!("Error: {}", map.get(smt_helper::ATTR_MEANING).unwrap());
+        log(map.get(smt_helper::ATTR_MEANING).unwrap());
         return;
     }
-    println!("message {:?}",map);
     let authors = map.get(smt_helper::ATTR_AUTHORS);
     let texts = map.get(smt_helper::ATTR_TEXT);
-    println!("authors: {:?}, texts: {:?}", authors, texts);
     if authors.is_none() || texts.is_none() {
-        println!("Error: Invalid response!");
+        log("Nothing returned!");
         return;
     }
     let authors = smt_helper::extract_array(authors.unwrap());
     let texts = smt_helper::extract_array(texts.unwrap());
     let size = min(authors.len(), texts.len());
     for i in 0..size {
-        println!("{}:{}", authors[i], texts[i]);
+        log(&format!("{}:{}",authors[i], texts[i]));
     }
 }
 
@@ -128,7 +125,6 @@ fn make_connection() -> Result<Application, io::Error> {
         "password".to_string(),
     );
     let result = app.login(username, password);
-    println!("Result: {:?}", result);
 
     if result.is_err() {
         Err(result.err().unwrap())
@@ -139,11 +135,18 @@ fn make_connection() -> Result<Application, io::Error> {
 
 fn get_input(question: String, defualt: String) -> String {
     let mut line = String::new();
-    println!("{} (defualt: {}): ", question, defualt);
+    log(&format!("{} (defualt: {}): ", question, defualt));
     std::io::stdin().read_line(&mut line).unwrap();
     let mut input = line.trim().to_string();
     if input.is_empty() {
         input = defualt;
     }
     input
+}
+
+fn log(message: &str) {
+    println!("{}", message);
+}
+fn log_error(message:io::Error) {
+    println!("Error: {}", message);
 }
