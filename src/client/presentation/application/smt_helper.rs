@@ -3,7 +3,7 @@ use std::collections::HashMap;
 pub const ATTR_CODE: &str = "code";
 pub const ATTR_MEANING: &str = "meaning";
 pub const ATTR_AUTHORS: &str = "authors";
-pub const ATTR_TEXT: &str = "text";
+pub const ATTR_TEXT: &str = "texts";
 const ENTRY_DELIMITER: &str = ",";
 const VALUE_DELIMITER: &str = ":";
 
@@ -26,13 +26,12 @@ pub fn create_logout() -> String {
 pub fn parse_response(response: String) -> HashMap<String, String> {
     let mut map = HashMap::new();
     let iter = response.split(&ENTRY_DELIMITER);
-    println!("response: {}", response);
     for pair in iter {
-        println!("pair: {}", pair);
         let mut pair_iter = pair.split(&VALUE_DELIMITER);
-        println!("pair_iter: {:?}", pair_iter);
         let key = pair_iter.next().unwrap();
         let value = pair_iter.next().unwrap();
+        let key = key.replace("\n", "");
+        let value = value.replace("\n", "");
         map.insert(String::from(key), String::from(value));
     }
     map

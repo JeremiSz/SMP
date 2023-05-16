@@ -51,7 +51,7 @@ fn make_socket() -> io::Result<TcpListener> {
 
 fn get_input(question: String, default: String) -> String {
     let mut input = String::new();
-    println!("{} (default: {})", question, default);
+    presentation::log(format!("{} (default: {})", question, default));
     std::io::stdin().read_line(&mut input).unwrap();
     input = input.trim().to_string();
     if input.is_empty() {
@@ -111,19 +111,20 @@ fn socket_thread(connection: TcpStream, message_store: Arc<Mutex<MessageStore>>)
             continue;
         }
         let request = smt_helper::parse(request.unwrap());
-        match request.get(smt_helper::COMMAND).unwrap() as &str {
-            smt_helper::COMMAND_READ => read(request, &mut connection, &message_store),
-            smt_helper::COMMAND_WRITE => write(request, username.clone(),&mut connection, &message_store),
-            smt_helper::COMMAND_LOGOUT => {
+        let command = smt_helper::convert_to_enum(request.get(smt_helper::COMMAND).unwrap());
+        match command {
+            smt_helper::Commands::Read => read(request, &mut connection, &message_store),
+            smt_helper::Commands::Write => write(request, username.clone(),&mut connection, &message_store),
+            smt_helper::Commands::Logout => {
                 let result = logout(request, &mut connection);
                 if result.is_err() {
                     done = false;
                     io::Result::Err(result.err().unwrap())
                 } else {
-                    done = result.is_err();
+                    done = result.unwrap();
                     io::Result::Ok(())
                 }
-            }
+            },
             _ => {
                 let message = connection.send_message(smt_helper::get_error(1002));
                 if message.is_err() {

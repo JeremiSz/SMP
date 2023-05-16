@@ -19,6 +19,7 @@ impl Connection {
         })
     }
     pub fn send_message(&mut self, message: String) -> io::Result<String> {
+        println!("Sending message: {}", message);
         self.writer.write(message.as_bytes())?;
         self.writer.flush()?;
 

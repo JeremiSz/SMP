@@ -14,6 +14,7 @@ impl Connection {
     pub fn recieve_message(&mut self) -> io::Result<String> {
         let mut line = String::new();
         self.reader.read_line(&mut line)?;
+        println!("Recieved message: {}", &line);
         Ok(line)
     }
     pub fn send_message(&mut self, message: String) -> io::Result<()> {

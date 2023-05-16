@@ -39,6 +39,7 @@ pub fn run() {
 
 fn logout(app: &mut Application) -> bool {
     let result = app.close();
+    println!("result: {:?}", result);
     if result.is_err() {
         println!("Error: {}", result.err().unwrap());
         return false;
@@ -93,8 +94,10 @@ fn read(app: &mut Application) {
         println!("Error: {}", map.get(smt_helper::ATTR_MEANING).unwrap());
         return;
     }
+    println!("message {:?}",map);
     let authors = map.get(smt_helper::ATTR_AUTHORS);
     let texts = map.get(smt_helper::ATTR_TEXT);
+    println!("authors: {:?}, texts: {:?}", authors, texts);
     if authors.is_none() || texts.is_none() {
         println!("Error: Invalid response!");
         return;

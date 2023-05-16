@@ -8,6 +8,30 @@ pub const COMMAND_READ: &'static str = "read";
 pub const COMMAND_WRITE: &'static str = "write";
 pub const COMMAND_LOGOUT: &'static str = "logout";
 
+pub enum Commands{
+    Login,
+    Read,
+    Write,
+    Logout
+}
+
+pub fn convert_to_enum(command: &str) -> Commands{
+    let first = command.chars().nth(0).unwrap();
+    let forth = command.chars().nth(3).unwrap();
+    if first == 'r'{
+        Commands::Read
+    }
+    else if first == 'w'{
+        Commands::Write
+    }
+    else if forth == 'i'{
+        Commands::Login
+    }
+    else{
+        Commands::Logout
+    }
+}
+
 pub fn parse(response: String) -> HashMap<String, String> {
     let mut map = HashMap::new();
     let iter = response.split(",");
@@ -15,6 +39,8 @@ pub fn parse(response: String) -> HashMap<String, String> {
         let mut pair_iter = pair.split(":");
         let key = pair_iter.next().unwrap();
         let value = pair_iter.next().unwrap();
+        let key = key.replace("\n", "");
+        let value = value.replace("\n", "");
         map.insert(String::from(key), String::from(value));
     }
     map
