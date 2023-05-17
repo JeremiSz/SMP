@@ -29,7 +29,13 @@ pub fn parse_response(response: String) -> HashMap<String, String> {
     for pair in iter {
         let mut pair_iter = pair.split(&VALUE_DELIMITER);
         let key = pair_iter.next().unwrap();
-        let value = pair_iter.next().unwrap();
+        let mut value = pair_iter.next().unwrap().to_string();
+        let mut entry = pair_iter.next();
+        while entry.is_some() {
+            value.push_str(&VALUE_DELIMITER);
+            value.push_str(entry.unwrap());
+            entry = pair_iter.next();
+        }
         let key = key.replace("\n", "");
         let value = value.replace("\n", "");
         map.insert(String::from(key), String::from(value));

@@ -13,9 +13,9 @@ pub fn run() {
     let mut app = app.unwrap();
     let mut input = String::new();
     loop {
-        log("Please enter a command:");
+        log("Commands\nread\nwrite\nlogout\nPlease enter a command:");
         std::io::stdin().read_line(&mut input).unwrap();
-        let command = input.trim().to_string();
+        let command = input.trim().to_lowercase();
         input.clear();
         match command.as_ref() {
             "logout" => {
